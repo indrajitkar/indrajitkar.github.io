@@ -1,1 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dark Recon Search Engine</title>
+  <meta name="description" content="Dark Recon Search Engine bug bounty recon utility." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap");
+    :root { color-scheme: dark; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "Space Grotesk", sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(37,99,235,.16), transparent 28%),
+        radial-gradient(circle at left center, rgba(34,197,94,.08), transparent 24%),
+        linear-gradient(180deg, #0d1117 0%, #0a0f14 100%);
+    }
+    .mono { font-family: "JetBrains Mono", monospace; }
+    .grid-bg::before {
+      content: ""; position: fixed; inset: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(148,163,184,.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148,163,184,.05) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(circle at center, rgba(0,0,0,.85), transparent 92%);
+    }
+    .panel {
+      border: 1px solid rgba(148,163,184,.12);
+      background: rgba(15,23,42,.6);
+      backdrop-filter: blur(14px);
+      transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+    .panel:hover { transform: translateY(-2px); border-color: rgba(59,130,246,.32); box-shadow: 0 18px 45px rgba(2,6,23,.32); }
+    .recon-btn, .primary-btn, .ghost-btn, .tab-btn {
+      transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+    }
+    .recon-btn {
+      border: 1px solid rgba(59,130,246,.22);
+      background: linear-gradient(180deg, rgba(30,41,59,.92), rgba(15,23,42,.96));
+      color: #e2e8f0;
+    }
+    .recon-btn:hover, .primary-btn:hover, .ghost-btn:hover, .tab-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(15,23,42,.35);
+    }
+    .recon-btn:hover { border-color: rgba(96,165,250,.6); box-shadow: 0 0 0 1px rgba(59,130,246,.18), 0 10px 20px rgba(15,23,42,.35); }
+    .recon-btn.visited { background: rgba(22,163,74,.88); border-color: rgba(74,222,128,.95); color: #fff; transform: scale(1.01); }
+    .primary-btn { background: linear-gradient(135deg, rgba(37,99,235,.95), rgba(29,78,216,.88)); }
+    .ghost-btn { border: 1px solid rgba(34,197,94,.25); background: rgba(34,197,94,.1); color: #bbf7d0; }
+    .fade { opacity: 0; transform: translateY(18px); transition: opacity .45s ease, transform .45s ease; }
+    .fade.show { opacity: 1; transform: translateY(0); }
+    .tab-btn[data-active="true"] { border-color: rgba(59,130,246,.55); background: rgba(37,99,235,.16); color: #f8fafc; }
+    .pulse { animation: pulse 1.4s ease-in-out infinite; }
+    .scrollbar-thin { scrollbar-width: thin; scrollbar-color: rgba(71,85,105,.9) rgba(15,23,42,.65); }
+    .scrollbar-thin::-webkit-scrollbar { width: 8px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: rgba(15,23,42,.65); border-radius: 999px; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(71,85,105,.9); border-radius: 999px; }
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: rgba(100,116,139,.95); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
+  </style>
+</head>
+<body class="grid-bg min-h-screen bg-[#0d1117] text-slate-100">
+  <div class="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <header class="fade panel overflow-hidden rounded-3xl p-8">
+      <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-emerald-500/5"></div>
+      <div class="relative flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+        <div class="max-w-3xl">
+          <span class="mono inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1 text-xs uppercase tracking-[0.28em] text-blue-200">Dark Recon Search Engine</span>
+          <h1 class="mt-5 text-4xl font-bold tracking-tight text-white sm:text-5xl">Professional bug bounty recon with clean dorks and future-ready scan flows.</h1>
+          <p class="mt-4 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">Preview queries, open Google dorks instantly, and keep a focused dark interface that feels fast and practical.</p>
+        </div>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div class="rounded-2xl border border-slate-800/80 bg-slate-950/40 p-4"><p class="mono text-xs uppercase tracking-[0.24em] text-slate-400">Categories</p><p id="categoryCount" class="mt-2 text-2xl font-bold text-white">0</p></div>
+          <div class="rounded-2xl border border-slate-800/80 bg-slate-950/40 p-4"><p class="mono text-xs uppercase tracking-[0.24em] text-slate-400">Dork Buttons</p><p id="dorkCount" class="mt-2 text-2xl font-bold text-blue-300">0</p></div>
+          <div class="rounded-2xl border border-slate-800/80 bg-slate-950/40 p-4"><p class="mono text-xs uppercase tracking-[0.24em] text-slate-400">Mode</p><p class="mt-2 text-2xl font-bold text-emerald-300">Manual Recon</p></div>
+        </div>
+      </div>
+    </header>
 
+    <main class="mt-8 space-y-8">
+      <section class="fade panel rounded-3xl p-6 sm:p-8">
+        <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div class="max-w-2xl">
+            <p class="mono text-xs uppercase tracking-[0.3em] text-slate-400">Target Setup</p>
+            <h2 class="mt-3 text-2xl font-semibold text-white">Enter a domain, then launch recon by category.</h2>
+            <p class="mt-2 text-sm leading-6 text-slate-400">Every dork uses the normalized target domain. The scan action is a functional placeholder that simulates a future recon pipeline.</p>
+          </div>
+          <div class="rounded-2xl border border-orange-500/20 bg-orange-500/10 px-4 py-3 text-sm text-orange-200">Scan results are simulated placeholders for now.</div>
+        </div>
+        <form id="targetForm" class="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
+          <label class="block">
+            <span class="mb-2 block text-sm font-medium text-slate-300">Enter Target Domain</span>
+            <div id="inputShell" class="rounded-2xl border border-slate-700 bg-slate-950/70 p-1">
+              <input id="domainInput" type="text" placeholder="example.com" class="w-full rounded-[calc(1rem-2px)] border-0 bg-transparent px-4 py-3 text-base text-white placeholder:text-slate-500 focus:outline-none" autocomplete="off" spellcheck="false" />
+            </div>
+          </label>
+          <button id="scanButton" type="submit" class="primary-btn flex items-center justify-center gap-2 rounded-2xl px-6 py-4 text-sm font-semibold text-white">
+            <span>Scan</span><span class="mono text-xs uppercase tracking-[0.18em] text-blue-100">Placeholder</span>
+          </button>
+        </form>
+        <div class="mt-4 flex flex-wrap items-center gap-3 text-sm text-slate-400">
+          <span class="rounded-full border border-slate-700 px-3 py-1">Normalizes full URLs automatically</span>
+          <span class="rounded-full border border-slate-700 px-3 py-1">Opens Google queries in a new tab</span>
+          <span class="rounded-full border border-slate-700 px-3 py-1">Copy query from preview anytime</span>
+        </div>
+      </section>
+
+      <section class="grid items-start gap-6 md:grid-cols-2">
+        <div class="space-y-6">
+          <div class="fade panel self-start rounded-3xl p-6 sm:p-8">
+          <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p class="mono text-xs uppercase tracking-[0.3em] text-slate-400">Dork Preview</p>
+              <h2 class="mt-3 text-2xl font-semibold text-white">Generated query</h2>
+              <p class="mt-2 text-sm leading-6 text-slate-400">Click any action below to generate the exact query, open Google, and keep the syntax visible here.</p>
+            </div>
+            <div id="activeBadge" class="rounded-full border border-slate-700 px-3 py-1 text-xs uppercase tracking-[0.24em] text-slate-400">No dork selected</div>
+          </div>
+          <div class="mt-6 rounded-3xl border border-slate-800 bg-slate-950/70 p-5">
+            <p class="mono text-xs uppercase tracking-[0.3em] text-slate-500">Current Query</p>
+            <pre id="queryPreview" class="mt-3 max-h-[220px] overflow-y-auto whitespace-pre-wrap break-words rounded-2xl border border-slate-800/80 bg-slate-900/40 px-4 py-3 text-sm leading-6 text-slate-200 scrollbar-thin">Enter a target domain and click a dork button to preview the search query.</pre>
+          </div>
+          <div class="mt-5 flex flex-wrap gap-3">
+            <button id="openQueryButton" type="button" class="primary-btn rounded-2xl px-5 py-3 text-sm font-semibold text-white">Open Current Query</button>
+            <button id="copyQueryButton" type="button" class="ghost-btn rounded-2xl px-5 py-3 text-sm font-semibold">Copy Query</button>
+            <div id="copyStatus" class="flex items-center rounded-2xl border border-slate-800 bg-slate-900/80 px-4 py-3 text-sm text-slate-400">Ready</div>
+          </div>
+        </div>
+
+          <section class="fade panel rounded-3xl p-6">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p class="mono text-xs uppercase tracking-[0.3em] text-slate-400">Recon Utility</p>
+                <h2 class="mt-3 text-2xl font-semibold text-white">Target workspace</h2>
+                <p class="mt-2 text-sm leading-6 text-slate-400">Keep target notes, shortcuts, and dork progress tied to the current domain.</p>
+              </div>
+              <div class="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-emerald-200">Persistent per target</div>
+            </div>
+            <div class="mt-5 grid gap-3 sm:grid-cols-3">
+              <div class="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+                <p class="mono text-[11px] uppercase tracking-[0.24em] text-slate-500">Target</p>
+                <p id="summaryTarget" class="mt-2 break-all text-sm font-semibold text-slate-100">No target</p>
+              </div>
+              <div class="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+                <p class="mono text-[11px] uppercase tracking-[0.24em] text-slate-500">Scope</p>
+                <p id="summaryScope" class="mt-2 break-all text-sm font-semibold text-slate-100">*.</p>
+              </div>
+              <div class="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+                <p class="mono text-[11px] uppercase tracking-[0.24em] text-slate-500">Status</p>
+                <p id="summaryStatus" class="mt-2 text-sm font-semibold text-orange-300">Idle</p>
+              </div>
+            </div>
+            <div class="mt-5">
+              <div class="flex items-center justify-between gap-3">
+                <label for="notesArea" class="text-sm font-medium text-slate-300">Quick Notes</label>
+                <span class="mono text-[11px] uppercase tracking-[0.24em] text-slate-500">Saved locally</span>
+              </div>
+              <textarea id="notesArea" rows="5" placeholder="Write recon notes..." class="mt-3 w-full rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-sm leading-6 text-slate-100 placeholder:text-slate-500 focus:border-blue-500/40 focus:outline-none"></textarea>
+            </div>
+            <div class="mt-5">
+              <p class="mono text-xs uppercase tracking-[0.3em] text-slate-400">Quick Actions</p>
+              <div class="mt-3 flex flex-wrap gap-3">
+                <button id="copyTargetButton" type="button" class="recon-btn rounded-2xl px-4 py-3 text-sm font-medium">Copy Target</button>
+                <button id="clearNotesButton" type="button" class="recon-btn rounded-2xl px-4 py-3 text-sm font-medium">Clear Notes</button>
+                <button id="resetProgressButton" type="button" class="recon-btn rounded-2xl px-4 py-3 text-sm font-medium">Reset Progress</button>
+              </div>
+            </div>
+            <div class="mt-5">
+              <p class="mono text-xs uppercase tracking-[0.3em] text-slate-400">Quick Dork Shortcuts</p>
+              <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                <button type="button" class="recon-btn rounded-2xl px-4 py-3 text-left text-sm font-medium" data-shortcut-label="Find Subdomains">Subdomains</button>
+                <button type="button" class="recon-btn rounded-2xl px-4 py-3 text-left text-sm font-medium" data-shortcut-label="Search in GITHUB">GitHub leaks</button>
+                <button type="button" class="recon-btn rounded-2xl px-4 py-3 text-left text-sm font-medium" data-shortcut-label="Backup and old files">Backup files</button>
+                <button type="button" class="recon-btn rounded-2xl px-4 py-3 text-left text-sm font-medium" data-shortcut-label="SQL errors">SQL errors</button>
+                <button type="button" class="recon-btn rounded-2xl px-4 py-3 text-left text-sm font-medium sm:col-span-2" data-shortcut-label="Open Redirects">Open Redirect</button>
+              </div>
+            </div>
+          </section>
+
+        </div>
+
+        <div class="fade space-y-8">
+          <section class="panel rounded-3xl p-6">
+            <p class="mono text-xs uppercase tracking-[0.3em] text-slate-400">Scan Console</p>
+            <div class="mt-3 flex items-start justify-between gap-4">
+              <div>
+                <h2 class="text-2xl font-semibold text-white">Future-ready scan flow</h2>
+                <p class="mt-2 text-sm leading-6 text-slate-400">Simulates the shape of an eventual recon pipeline without claiming live validation.</p>
+              </div>
+              <span id="scanStateBadge" class="rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-orange-200">Idle</span>
+            </div>
+            <div class="mt-5 rounded-3xl border border-slate-800 bg-slate-950/70 p-5">
+              <div class="flex items-center justify-between gap-3">
+                <p class="text-sm font-medium text-slate-200">Latest scan status</p>
+                <span id="scanTarget" class="mono text-xs uppercase tracking-[0.22em] text-slate-500">No target</span>
+              </div>
+              <div class="mt-4 h-2 rounded-full bg-slate-800"><div id="scanProgress" class="h-2 w-0 rounded-full bg-blue-500 transition-all duration-300 ease-out"></div></div>
+              <ul id="scanLog" class="mt-4 space-y-3 text-sm text-slate-300">
+                <li class="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3">Waiting for a target. The scan button will simulate discovery stages here.</li>
+              </ul>
+            </div>
+          </section>
+
+          <section class="panel rounded-3xl p-6">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p class="mono text-xs uppercase tracking-[0.3em] text-slate-400">Future Results</p>
+                <h2 class="mt-3 text-2xl font-semibold text-white">Recon tabs scaffold</h2>
+              </div>
+              <div class="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-emerald-200">API-ready structure</div>
+            </div>
+            <div class="mt-5 flex flex-wrap gap-3">
+              <button type="button" class="tab-btn rounded-2xl border border-slate-700 px-4 py-2 text-sm text-slate-300" data-tab="subdomains" data-active="true">Subdomains</button>
+              <button type="button" class="tab-btn rounded-2xl border border-slate-700 px-4 py-2 text-sm text-slate-300" data-tab="ports" data-active="false">Ports</button>
+              <button type="button" class="tab-btn rounded-2xl border border-slate-700 px-4 py-2 text-sm text-slate-300" data-tab="leaks" data-active="false">Leaks</button>
+            </div>
+            <div id="tabPanels" class="mt-5"></div>
+          </section>
+
+          <section class="panel rounded-3xl p-6">
+            <p class="mono text-xs uppercase tracking-[0.3em] text-slate-400">Integration Notes</p>
+            <div class="mt-3 space-y-3 text-sm leading-6 text-slate-300">
+              <p>Prepared for future hooks into Shodan, Censys, certificate transparency, and custom bug bounty APIs.</p>
+              <p class="rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-slate-400">Suggested next step: replace the placeholder scan routine with async fetch calls and stream real findings into the tab renderer.</p>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <div class="max-w-6xl mx-auto px-4 mt-12">
+        <div class="grid grid-cols-1">
+          <section class="fade">
+            <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p class="mono text-xs uppercase tracking-[0.3em] text-slate-400">Dork Library</p>
+                <h2 class="mt-3 text-3xl font-semibold text-white">Categorized Google recon actions</h2>
+                <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-400">Each section is rendered from a reusable JavaScript config so you can expand the dork set without rebuilding the interface.</p>
+              </div>
+              <div class="rounded-2xl border border-slate-800 bg-slate-950/60 px-4 py-3 text-sm text-slate-400">Click any action to open Google immediately and keep a local preview.</div>
+            </div>
+            <div id="categoryGrid" class="grid gap-6 xl:grid-cols-2"></div>
+          </section>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <footer class="mt-16 border-t border-gray-800 py-6 text-center text-sm text-gray-500">
+    © 2026 Dark Recon Search Engine — Developed by Indrajit Karmakar
+  </footer>
+
+  <script>
+    const dorkCategories = [
+      { title: "Exposure & Files", accent: "blue", description: "Find exposed files, backups, and weakly protected document surfaces.", items: [
+        { label: "Directory listing vulnerabilities", build: d => `site:${d} intitle:"index of"` },
+        { label: "Exposed Configuration files", build: d => `site:${d} (ext:env OR ext:cfg OR ext:conf OR ext:ini OR ext:yml OR ext:yaml)` },
+        { label: "Exposed Database files", build: d => `site:${d} (ext:sql OR ext:db OR ext:mdb OR ext:sqlite)` },
+        { label: "Exposed log files", build: d => `site:${d} ext:log` },
+        { label: "Backup and old files", build: d => `site:${d} (ext:bak OR ext:old OR ext:backup OR ext:zip OR ext:tar OR ext:gz)` },
+        { label: "Publicly exposed documents", build: d => `site:${d} (ext:pdf OR ext:doc OR ext:docx OR ext:xls OR ext:xlsx OR ext:ppt OR ext:txt)` },
+        { label: ".htaccess sensitive files", build: d => `site:${d} ext:htaccess` },
+        { label: "Sensitive file", build: d => `site:${d} (ext:key OR ext:pem OR ext:crt OR ext:csr OR ext:ovpn OR ext:sh OR ext:ps1)` },
+        { label: "Sensitive admin backup", build: d => `site:${d} (inurl:admin OR intitle:admin) (ext:bak OR ext:old OR ext:backup OR ext:zip)` },
+        { label: "Docker-compose yml file", build: d => `site:${d} ("docker-compose.yml" OR "docker-compose.yaml")` },
+        { label: "main.yml file", build: d => `site:${d} "main.yml"` },
+        { label: "Wordpress Backup", build: d => `site:${d} (inurl:wp-content OR inurl:wp-admin) (ext:zip OR ext:bak OR ext:sql)` },
+        { label: "SQL file", build: d => `site:${d} ext:sql` },
+        { label: "Mysql file", build: d => `site:${d} ("mysql" OR "mysqldump") (ext:sql OR ext:txt)` },
+        { label: "Directories containing SQL installs and/or SQL databases", build: d => `site:${d} intitle:"index of" ("sql" OR "mysql" OR "db")` }
+      ]},
+      { title: "Auth & Panels", accent: "orange", description: "Look for auth flows, admin entry points, and leftover installers.", items: [
+        { label: "Login pages", build: d => `site:${d} (inurl:login OR intitle:login OR inurl:signin)` },
+        { label: "Admin Portal", build: d => `site:${d} (inurl:admin OR intitle:"admin portal" OR intitle:dashboard)` },
+        { label: "phpinfo()", build: d => `site:${d} ext:php intitle:phpinfo "published by the PHP Group"` },
+        { label: "Install / Setup files", build: d => `site:${d} (inurl:install OR inurl:setup OR intitle:"setup wizard")` },
+        { label: "Drupal Login", build: d => `site:${d} inurl:user/login` },
+        { label: "Joomla Database/", build: d => `site:${d} "Joomla!" ("configuration.php" OR inurl:database)` }
+      ]},
+      { title: "Recon & OSINT", accent: "green", description: "Pivot through public sources for assets, code references, and disclosures.", items: [
+        { label: "Find Subdomains", build: d => `site:*.${d}` },
+        { label: "Find Sub-Subdomains", build: d => `site:*.*.${d}` },
+        { label: "Employees on LINKEDIN", build: d => `"${d}" (site:linkedin.com/in OR site:linkedin.com/company)` },
+        { label: "Search in GITHUB", build: d => `"${d}" site:github.com` },
+        { label: "Find Pastebin entries", build: d => `"${d}" site:pastebin.com` },
+        { label: "Search in Reddit", build: d => `"${d}" site:reddit.com` },
+        { label: "Search OpenBugBounty", build: d => `"${d}" site:openbugbounty.org` }
+      ]},
+      { title: "Tech & CMS Detection", accent: "blue", description: "Fingerprint WordPress footprints and surface juicy CMS files.", items: [
+        { label: "Find WordPress", build: d => `site:${d} (inurl:wp- OR inurl:wp-content)` },
+        { label: "Find WordPress #2", build: d => `site:${d} "wp-content/uploads"` },
+        { label: "Wordpress Juicy file 1", build: d => `site:${d} (inurl:wp-config.php OR inurl:wp-config)` },
+        { label: "Wordpress Juicy file 2", build: d => `site:${d} ("backup-db" OR "database backup") "wp-content"` },
+        { label: "Wordpress Juicy file 3", build: d => `site:${d} (inurl:debug.log OR inurl:uploads) "wordpress"` },
+        { label: "Vulnerable Wordpress Plugin", build: d => `site:${d} inurl:/wp-content/plugins/` },
+        { label: "wp-content Juicy Info", build: d => `site:${d} "wp-content" ("uploads" OR "plugins" OR "themes")` }
+      ]},
+      { title: "Advanced Search / Archive", accent: "orange", description: "Search historical traces and archived pivots around the target.", items: [
+        { label: "Search in Web Archive #1", build: d => `"${d}" site:web.archive.org` },
+        { label: "Search in Web Archive #2", build: d => `"${d}" "snapshot" site:web.archive.org` }
+      ]},
+      { title: "Intelligence Sources", accent: "green", description: "Jump into infra and certificate intelligence platforms through Google.", items: [
+        { label: "Search in SHODAN", build: d => `"${d}" site:shodan.io` },
+        { label: "Search in CENSYS (IPv4)", build: d => `"${d}" site:search.censys.io/hosts` },
+        { label: "Search in CENSYS (Domain)", build: d => `"${d}" site:search.censys.io` },
+        { label: "Search in Censys (Certificates)", build: d => `"${d}" site:search.censys.io/certificates` },
+        { label: "Certificate Transparency", build: d => `"${d}" site:crt.sh` },
+        { label: "Check in ThreatCrowd", build: d => `"${d}" site:threatcrowd.org` }
+      ]},
+      { title: "Vulnerability Patterns", accent: "orange", description: "Target error strings, risky endpoints, and sensitive file patterns.", items: [
+        { label: "Open Redirects", build: d => `site:${d} (inurl:url= OR inurl:return= OR inurl:next= OR inurl:redirect=)` },
+        { label: "SQL errors", build: d => `site:${d} ("sql syntax near" OR "mysql_fetch" OR "ORA-01756")` },
+        { label: "File Upload", build: d => `site:${d} (inurl:upload OR intitle:"file upload")` },
+        { label: "Sensitive File", build: d => `site:${d} (ext:json OR ext:xml OR ext:txt) ("api_key" OR "token" OR "secret")` },
+        { label: "Sharing API Info", build: d => `site:${d} ("api_key" OR "x-api-key" OR "authorization bearer" OR "swagger")` },
+        { label: "Remote procedure call protocol", build: d => `site:${d} (inurl:xmlrpc.php OR "RPC Endpoint" OR inurl:rpc)` }
+      ]},
+      { title: "Legacy / Flash", accent: "blue", description: "Track older Flash-era resources that still reveal forgotten assets.", items: [
+        { label: "Find SWF", build: d => `site:${d} ext:swf` },
+        { label: "Find MIME-SWF", build: d => `site:${d} "application/x-shockwave-flash"` },
+        { label: "Find SWF links in the past", build: d => `"${d}" ext:swf site:web.archive.org` },
+        { label: "Find MIME-SWF links in the past", build: d => `"${d}" "application/x-shockwave-flash" site:web.archive.org` }
+      ]},
+      { title: "Other", accent: "green", description: "Catch a few strong special-case checks outside the main buckets.", items: [
+        { label: "ArcGIS REST Services Directory", build: d => `site:${d} inurl:"/ArcGIS/rest/services"` },
+        { label: "Test CrossDomain", build: d => `site:${d} ext:xml "crossdomain.xml"` },
+        { label: "Apache STRUTS RCE", build: d => `site:${d} ("struts" OR "actionMessage" OR "There is no Action mapped")` }
+      ]}
+    ];
+
+    function makeDorkId(categoryTitle, label) {
+      return `${categoryTitle}_${label}`.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+    }
+
+    dorkCategories.forEach(category => {
+      category.items = category.items.map(item => ({ ...item, id: makeDorkId(category.title, item.label) }));
+    });
+
+    const accentClasses = {
+      blue: { badge: "border-blue-500/20 bg-blue-500/10 text-blue-200", title: "text-blue-300" },
+      green: { badge: "border-emerald-500/20 bg-emerald-500/10 text-emerald-200", title: "text-emerald-300" },
+      orange: { badge: "border-orange-500/20 bg-orange-500/10 text-orange-200", title: "text-orange-300" }
+    };
+
+    const el = {
+      domainInput: document.getElementById("domainInput"),
+      inputShell: document.getElementById("inputShell"),
+      targetForm: document.getElementById("targetForm"),
+      categoryGrid: document.getElementById("categoryGrid"),
+      queryPreview: document.getElementById("queryPreview"),
+      activeBadge: document.getElementById("activeBadge"),
+      openQueryButton: document.getElementById("openQueryButton"),
+      copyQueryButton: document.getElementById("copyQueryButton"),
+      summaryTarget: document.getElementById("summaryTarget"),
+      summaryScope: document.getElementById("summaryScope"),
+      summaryStatus: document.getElementById("summaryStatus"),
+      notesArea: document.getElementById("notesArea"),
+      copyTargetButton: document.getElementById("copyTargetButton"),
+      clearNotesButton: document.getElementById("clearNotesButton"),
+      resetProgressButton: document.getElementById("resetProgressButton"),
+      copyStatus: document.getElementById("copyStatus"),
+      categoryCount: document.getElementById("categoryCount"),
+      dorkCount: document.getElementById("dorkCount"),
+      scanStateBadge: document.getElementById("scanStateBadge"),
+      scanTarget: document.getElementById("scanTarget"),
+      scanProgress: document.getElementById("scanProgress"),
+      scanLog: document.getElementById("scanLog"),
+      tabPanels: document.getElementById("tabPanels"),
+      footer: document.querySelector("footer")
+    };
+
+    let currentQuery = "";
+    let currentLabel = "";
+    let activeTab = "subdomains";
+    let activeDomain = "";
+    let isLoadingNotes = false;
+    let scanTimers = [];
+
+    const tabState = {
+      subdomains: [{ name: "Waiting for scan", meta: "Run the placeholder scan to populate projected assets." }],
+      ports: [{ name: "No port data yet", meta: "Reserved for future infrastructure integrations." }],
+      leaks: [{ name: "No leak data yet", meta: "Use the dork buttons above while live API hooks are pending." }]
+    };
+
+    const flatItems = dorkCategories.flatMap(category => category.items);
+    const dorkMapById = new Map(flatItems.map(item => [item.id, item]));
+    const dorkMapByLabel = new Map(flatItems.map(item => [item.label, item]));
+
+    function normalizeDomain(value) {
+      const cleaned = value.trim();
+      if (!cleaned) return "";
+      const candidate = /^[a-zA-Z]+:\/\//.test(cleaned) ? cleaned : `https://${cleaned}`;
+      try {
+        return new URL(candidate).hostname.replace(/^www\./i, "").toLowerCase();
+      } catch {
+        return cleaned.replace(/^[a-zA-Z]+:\/\//, "").split("/")[0].replace(/^www\./i, "").toLowerCase();
+      }
+    }
+
+    function getDomain() {
+      activeDomain = normalizeDomain(el.domainInput.value);
+      return activeDomain;
+    }
+
+    function notesKey(domain) {
+      return `notes_${domain}`;
+    }
+
+    function dorksKey(domain) {
+      return `dorks_${domain}`;
+    }
+
+    function getStoredArray(key) {
+      try {
+        const value = localStorage.getItem(key);
+        return value ? JSON.parse(value) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function getClickedDorks(domain) {
+      return domain ? getStoredArray(dorksKey(domain)) : [];
+    }
+
+    function saveClickedDorks(domain, values) {
+      if (!domain) return;
+      localStorage.setItem(dorksKey(domain), JSON.stringify(values));
+    }
+
+    function setTargetSummary(domain) {
+      el.summaryTarget.textContent = domain || "No target";
+      el.summaryScope.textContent = domain ? `*.${domain}` : "*.";
+      el.summaryStatus.textContent = domain ? "Active" : "Idle";
+      el.summaryStatus.className = domain ? "mt-2 text-sm font-semibold text-emerald-300" : "mt-2 text-sm font-semibold text-orange-300";
+    }
+
+    function loadNotesForDomain(domain) {
+      isLoadingNotes = true;
+      el.notesArea.value = domain ? (localStorage.getItem(notesKey(domain)) || "") : "";
+      isLoadingNotes = false;
+    }
+
+    function saveNotesForDomain(domain) {
+      if (!domain) return;
+      localStorage.setItem(notesKey(domain), el.notesArea.value);
+    }
+
+    function markDorkClicked(domain, dorkId) {
+      if (!domain || !dorkId) return;
+      const clicked = new Set(getClickedDorks(domain));
+      clicked.add(dorkId);
+      saveClickedDorks(domain, [...clicked]);
+      refreshDorkButtonStates(domain);
+    }
+
+    function refreshDorkButtonStates(domain = activeDomain) {
+      const clicked = new Set(getClickedDorks(domain));
+      document.querySelectorAll("[data-dork-id]").forEach(button => {
+        const visited = Boolean(domain) && clicked.has(button.dataset.dorkId);
+        button.classList.toggle("visited", visited);
+        button.classList.toggle("bg-green-600", visited);
+        button.classList.toggle("border-green-400", visited);
+        button.classList.toggle("text-white", visited);
+        const icon = button.querySelector("[data-visited-icon]");
+        if (icon) {
+          icon.textContent = visited ? String.fromCharCode(10003) : "";
+          icon.classList.toggle("hidden", !visited);
+        }
+      });
+    }
+
+    function syncTargetState() {
+      const domain = getDomain();
+      setTargetSummary(domain);
+      loadNotesForDomain(domain);
+      refreshDorkButtonStates(domain);
+      renderTabs();
+    }
+
+    function setInputState(valid) {
+      el.inputShell.className = valid
+        ? "rounded-2xl border border-slate-700 bg-slate-950/70 p-1"
+        : "rounded-2xl border border-orange-400/70 bg-slate-950/70 p-1";
+    }
+
+    function setStatus(message, tone = "neutral") {
+      const map = {
+        neutral: "border-slate-800 bg-slate-900/80 text-slate-400",
+        success: "border-emerald-500/25 bg-emerald-500/10 text-emerald-200",
+        warn: "border-orange-500/25 bg-orange-500/10 text-orange-200"
+      };
+      el.copyStatus.className = `flex items-center rounded-2xl border px-4 py-3 text-sm ${map[tone]}`;
+      el.copyStatus.textContent = message;
+    }
+
+    function googleUrl(query) {
+      return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+    }
+
+    function updatePreview(label, query) {
+      currentLabel = label;
+      currentQuery = query;
+      el.activeBadge.textContent = label;
+      el.queryPreview.textContent = query;
+      setStatus("Query ready", "success");
+    }
+
+    function openQuery(query) {
+      window.open(googleUrl(query), "_blank", "noopener,noreferrer");
+    }
+
+    function handleDork(item) {
+      const domain = getDomain();
+      if (!domain) {
+        setInputState(false);
+        updatePreview("Target required", "Please enter a target domain before launching a dork.");
+        setStatus("Enter a target domain first", "warn");
+        el.domainInput.focus();
+        return;
+      }
+      setInputState(true);
+      const query = item.build(domain);
+      updatePreview(item.label, query);
+      markDorkClicked(domain, item.id);
+      openQuery(query);
+    }
+
+    function renderCategories() {
+      el.categoryCount.textContent = dorkCategories.length;
+      el.dorkCount.textContent = flatItems.length;
+      el.categoryGrid.innerHTML = dorkCategories.map(category => {
+        const accent = accentClasses[category.accent] || accentClasses.blue;
+        return `
+          <section class="panel fade rounded-3xl p-6">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h3 class="text-2xl font-semibold ${accent.title}">${category.title}</h3>
+                <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-400">${category.description}</p>
+              </div>
+              <span class="rounded-full border px-3 py-1 text-xs uppercase tracking-[0.24em] ${accent.badge}">${category.items.length} Actions</span>
+            </div>
+            <div class="mt-5 grid gap-3 sm:grid-cols-2">
+              ${category.items.map(item => `
+                <button
+                  type="button"
+                  class="recon-btn flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium"
+                  data-label="${item.label.replace(/"/g, "&quot;")}"
+                  data-dork-id="${item.id}"
+                >
+                  <span>${item.label}</span>
+                  <span data-visited-icon class="mono hidden text-xs font-bold text-emerald-50">✓</span>
+                </button>
+              `).join("")}
+            </div>
+          </section>
+        `;
+      }).join("");
+
+      el.categoryGrid.querySelectorAll("[data-dork-id]").forEach(button => {
+        const item = dorkMapById.get(button.dataset.dorkId);
+        button.addEventListener("click", () => handleDork(item));
+      });
+
+      refreshDorkButtonStates(activeDomain);
+    }
+
+    function clearScanTimers() {
+      scanTimers.forEach(timer => clearTimeout(timer));
+      scanTimers = [];
+    }
+
+    function renderScanLog(lines) {
+      el.scanLog.innerHTML = lines.map(line => `<li class="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3">${line}</li>`).join("");
+    }
+
+    function renderTabs() {
+      const titles = { subdomains: "Projected hostnames", ports: "Likely services", leaks: "Manual recon hints" };
+      el.tabPanels.innerHTML = `
+        <div class="rounded-3xl border border-slate-800 bg-slate-950/70 p-5">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p class="mono text-xs uppercase tracking-[0.3em] text-slate-500">${titles[activeTab]}</p>
+              <h3 class="mt-2 text-lg font-semibold text-white">${activeTab[0].toUpperCase() + activeTab.slice(1)}</h3>
+            </div>
+            <div class="rounded-full border border-slate-800 px-3 py-1 text-xs uppercase tracking-[0.24em] text-slate-400">${activeDomain || "No target loaded"}</div>
+          </div>
+          <div class="mt-4 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin">
+            <div class="space-y-3">
+            ${tabState[activeTab].map(item => `
+              <div class="rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-4">
+                <p class="text-sm font-semibold text-slate-100">${item.name}</p>
+                <p class="mt-1 text-sm leading-6 text-slate-400">${item.meta}</p>
+              </div>
+            `).join("")}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function setActiveTab(name) {
+      activeTab = name;
+      document.querySelectorAll(".tab-btn").forEach(button => {
+        button.dataset.active = button.dataset.tab === name ? "true" : "false";
+      });
+      renderTabs();
+    }
+
+    function simulateScan(domain) {
+      clearScanTimers();
+      activeDomain = domain;
+      el.scanStateBadge.className = "pulse rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-blue-200";
+      el.scanStateBadge.textContent = "Running";
+      el.scanTarget.textContent = domain;
+      el.scanProgress.style.width = "8%";
+      renderScanLog([
+        `Queued placeholder scan for ${domain}.`,
+        "Preparing result buckets for subdomains, ports, and leaks."
+      ]);
+
+      const stages = [
+        {
+          delay: 450,
+          progress: "34%",
+          lines: [
+            `Normalized target: ${domain}`,
+            "Placeholder discovery stage 1: drafting projected subdomain seeds.",
+            "Placeholder discovery stage 2: preparing passive OSINT hooks."
+          ]
+        },
+        {
+          delay: 1000,
+          progress: "68%",
+          lines: [
+            `Scope retained for ${domain}`,
+            "Mapped future integrations for GitHub, Pastebin, Reddit, Shodan, and Censys pivots.",
+            "Live verification is intentionally disabled in this placeholder flow."
+          ]
+        },
+        {
+          delay: 1650,
+          progress: "100%",
+          lines: [
+            `Placeholder scan finished for ${domain}`,
+            "UI structure is ready for real async integrations.",
+            "Use the dork library below for immediate manual recon."
+          ],
+          done: true
+        }
+      ];
+
+      stages.forEach(stage => {
+        const timer = window.setTimeout(() => {
+          el.scanProgress.style.width = stage.progress;
+          renderScanLog(stage.lines);
+          if (stage.done) {
+            el.scanStateBadge.className = "rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-emerald-200";
+            el.scanStateBadge.textContent = "Complete";
+            tabState.subdomains = [
+              { name: `www.${domain}`, meta: "Baseline hostname placeholder for future enumeration results." },
+              { name: `api.${domain}`, meta: "Common application edge host placeholder." },
+              { name: `dev.${domain}`, meta: "Development environment guess to replace with validated assets later." }
+            ];
+            tabState.ports = [
+              { name: "80 / HTTP", meta: "Typical web service placeholder. Replace with actual port scan data." },
+              { name: "443 / HTTPS", meta: "Default TLS edge placeholder ready for metadata enrichment." },
+              { name: "8080 / Alternate Web", meta: "Useful bucket for future service fingerprinting." }
+            ];
+            tabState.leaks = [
+              { name: ".env / config watchlist", meta: "Pair with the configuration and sensitive file dorks for manual confirmation." },
+              { name: "Backup archive watchlist", meta: "Use the backup, SQL, and WordPress backup actions to investigate safely." },
+              { name: "Public document review queue", meta: "Cross-check PDFs, sheets, and docs for data exposure." }
+            ];
+            renderTabs();
+          }
+        }, stage.delay);
+        scanTimers.push(timer);
+      });
+    }
+
+    function observeFade() {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("show");
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12 });
+
+      document.querySelectorAll(".fade").forEach(node => observer.observe(node));
+    }
+
+    el.targetForm.addEventListener("submit", event => {
+      event.preventDefault();
+      const domain = getDomain();
+      if (!domain) {
+        setInputState(false);
+        renderScanLog(["Please enter a target domain before running the placeholder scan."]);
+        el.scanStateBadge.className = "rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-1 text-xs uppercase tracking-[0.24em] text-orange-200";
+        el.scanStateBadge.textContent = "Target required";
+        el.scanTarget.textContent = "No target";
+        el.scanProgress.style.width = "0%";
+        setStatus("Scan needs a target domain", "warn");
+        el.domainInput.focus();
+        return;
+      }
+      setInputState(true);
+      setStatus("Placeholder scan started", "success");
+      simulateScan(domain);
+    });
+
+    el.openQueryButton.addEventListener("click", () => {
+      if (!currentQuery || currentQuery.startsWith("Please enter a target")) {
+        setStatus("Generate a valid query first", "warn");
+        return;
+      }
+      openQuery(currentQuery);
+      setStatus(`Opened ${currentLabel}`, "success");
+    });
+
+    el.copyQueryButton.addEventListener("click", async () => {
+      if (!currentQuery || currentQuery.startsWith("Please enter a target")) {
+        setStatus("Nothing to copy yet", "warn");
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(currentQuery);
+        setStatus("Query copied to clipboard", "success");
+      } catch {
+        setStatus("Clipboard access unavailable in this browser", "warn");
+      }
+    });
+
+    el.domainInput.addEventListener("input", () => {
+      setInputState(true);
+      syncTargetState();
+    });
+
+    el.notesArea.addEventListener("input", () => {
+      if (isLoadingNotes) return;
+      const domain = getDomain();
+      if (!domain) {
+        setStatus("Enter a target before saving notes", "warn");
+        return;
+      }
+      saveNotesForDomain(domain);
+    });
+
+    el.copyTargetButton.addEventListener("click", async () => {
+      const domain = getDomain();
+      if (!domain) {
+        setStatus("No target to copy yet", "warn");
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(domain);
+        setStatus("Target copied to clipboard", "success");
+      } catch {
+        setStatus("Clipboard access unavailable in this browser", "warn");
+      }
+    });
+
+    el.clearNotesButton.addEventListener("click", () => {
+      const domain = getDomain();
+      if (!domain) {
+        setStatus("No target notes to clear yet", "warn");
+        return;
+      }
+      localStorage.removeItem(notesKey(domain));
+      loadNotesForDomain(domain);
+      setStatus("Notes cleared for current target", "success");
+    });
+
+    el.resetProgressButton.addEventListener("click", () => {
+      const domain = getDomain();
+      if (!domain) {
+        setStatus("No target progress to reset yet", "warn");
+        return;
+      }
+      localStorage.removeItem(dorksKey(domain));
+      refreshDorkButtonStates(domain);
+      setStatus("Dork progress reset for current target", "success");
+    });
+
+    document.querySelectorAll("[data-shortcut-label]").forEach(button => {
+      button.addEventListener("click", () => {
+        const item = dorkMapByLabel.get(button.dataset.shortcutLabel);
+        if (item) handleDork(item);
+      });
+    });
+
+    document.querySelectorAll(".tab-btn").forEach(button => {
+      button.addEventListener("click", () => setActiveTab(button.dataset.tab));
+    });
+
+    renderCategories();
+    renderTabs();
+    observeFade();
+    syncTargetState();
+    el.footer.innerHTML = "&copy; 2026 Dark Recon Search Engine - Developed by Indrajit Karmakar";
+  </script>
+</body>
+</html>
