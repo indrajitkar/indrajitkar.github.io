@@ -16,7 +16,30 @@
         radial-gradient(circle at top right, rgba(37,99,235,.16), transparent 28%),
         radial-gradient(circle at left center, rgba(34,197,94,.08), transparent 24%),
         linear-gradient(180deg, #0d1117 0%, #0a0f14 100%);
+      transition: background 0.3s ease, color 0.3s ease;
     }
+    body.light-mode {
+      color-scheme: light;
+      background:
+        radial-gradient(circle at top right, rgba(37,99,235,.08), transparent 28%),
+        radial-gradient(circle at left center, rgba(34,197,94,.05), transparent 24%),
+        linear-gradient(180deg, #f5f5f5 0%, #e8e8e8 100%);
+    }
+    body.light-mode .panel {
+      border: 1px solid rgba(107,114,128,.15);
+      background: rgba(249,250,251,.85);
+    }
+    body.light-mode .panel:hover { border-color: rgba(59,130,246,.5); box-shadow: 0 18px 45px rgba(0,0,0,.08); }
+    body.light-mode .text-white { color: #1f2937; }
+    body.light-mode .text-slate-300 { color: #6b7280; }
+    body.light-mode .text-slate-400 { color: #9ca3af; }
+    body.light-mode .text-slate-500 { color: #6b7280; }
+    body.light-mode .text-slate-100 { color: #1f2937; }
+    body.light-mode .bg-\[\#0d1117\] { background: transparent; }
+    body.light-mode .bg-slate-950\/70 { background: rgba(255,255,255,.9); border-color: rgba(107,114,128,.2); }
+    body.light-mode .bg-slate-900\/70 { background: rgba(255,255,255,.95); }
+    body.light-mode .text-blue-200 { color: #1e40af; }
+    body.light-mode .text-slate-300 { color: #4b5563; }
     .mono { font-family: "JetBrains Mono", monospace; }
     .grid-bg::before {
       content: ""; position: fixed; inset: 0; pointer-events: none;
@@ -25,6 +48,11 @@
         linear-gradient(90deg, rgba(148,163,184,.05) 1px, transparent 1px);
       background-size: 48px 48px;
       mask-image: radial-gradient(circle at center, rgba(0,0,0,.85), transparent 92%);
+    }
+    body.light-mode .grid-bg::before {
+      background-image:
+        linear-gradient(rgba(107,114,128,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(107,114,128,.03) 1px, transparent 1px);
     }
     .panel {
       border: 1px solid rgba(148,163,184,.12);
@@ -58,6 +86,10 @@
     .scrollbar-thin::-webkit-scrollbar-track { background: rgba(15,23,42,.65); border-radius: 999px; }
     .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(71,85,105,.9); border-radius: 999px; }
     .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: rgba(100,116,139,.95); }
+    .theme-toggle { width: 50px; height: 28px; background: rgba(59,130,246,.2); border: 1px solid rgba(59,130,246,.4); border-radius: 999px; cursor: pointer; display: flex; align-items: center; padding: 2px; transition: all 0.3s ease; }
+    .theme-toggle.active { background: rgba(34,197,94,.2); border-color: rgba(34,197,94,.4); }
+    .theme-toggle-circle { width: 24px; height: 24px; border-radius: 50%; background: white; transition: transform 0.3s ease; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+    .theme-toggle.active .theme-toggle-circle { transform: translateX(22px); }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
   </style>
 </head>
@@ -71,10 +103,15 @@
           <h1 class="mt-5 text-4xl font-bold tracking-tight text-white sm:text-5xl">Professional bug bounty recon with clean dorks and future-ready scan flows.</h1>
           <p class="mt-4 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">Preview queries, open Google dorks instantly, and keep a focused dark interface that feels fast and practical.</p>
         </div>
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div class="rounded-2xl border border-slate-800/80 bg-slate-950/40 p-4"><p class="mono text-xs uppercase tracking-[0.24em] text-slate-400">Categories</p><p id="categoryCount" class="mt-2 text-2xl font-bold text-white">0</p></div>
-          <div class="rounded-2xl border border-slate-800/80 bg-slate-950/40 p-4"><p class="mono text-xs uppercase tracking-[0.24em] text-slate-400">Dork Buttons</p><p id="dorkCount" class="mt-2 text-2xl font-bold text-blue-300">0</p></div>
-          <div class="rounded-2xl border border-slate-800/80 bg-slate-950/40 p-4"><p class="mono text-xs uppercase tracking-[0.24em] text-slate-400">Mode</p><p class="mt-2 text-2xl font-bold text-emerald-300">Manual Recon</p></div>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-end">
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div class="rounded-2xl border border-slate-800/80 bg-slate-950/40 p-4"><p class="mono text-xs uppercase tracking-[0.24em] text-slate-400">Categories</p><p id="categoryCount" class="mt-2 text-2xl font-bold text-emerald-400">0</p></div>
+            <div class="rounded-2xl border border-slate-800/80 bg-slate-950/40 p-4"><p class="mono text-xs uppercase tracking-[0.24em] text-slate-400">Dork Buttons</p><p id="dorkCount" class="mt-2 text-2xl font-bold text-blue-400">0</p></div>
+            <div class="rounded-2xl border border-slate-800/80 bg-slate-950/40 p-4"><p class="mono text-xs uppercase tracking-[0.24em] text-slate-400">Mode</p><p class="mt-2 text-2xl font-bold text-emerald-400">Dark</p></div>
+          </div>
+          <button id="themeToggle" class="theme-toggle" title="Toggle light/dark mode">
+            <span class="theme-toggle-circle">🌙</span>
+          </button>
         </div>
       </div>
     </header>
@@ -93,7 +130,7 @@
           <label class="block">
             <span class="mb-2 block text-sm font-medium text-slate-300">Enter Target Domain</span>
             <div id="inputShell" class="rounded-2xl border border-slate-700 bg-slate-950/70 p-1">
-              <input id="domainInput" type="text" placeholder="example.com" class="w-full rounded-[calc(1rem-2px)] border-0 bg-transparent px-4 py-3 text-base text-white placeholder:text-slate-500 focus:outline-none" autocomplete="off" spellcheck="false" />
+              <input id="domainInput" type="text" placeholder="example.com" class="w-full rounded-[calc(1rem-2px)] border-0 bg-transparent px-4 py-3 text-base text-white placeholder:text-slate-500 focus:outline-none" />
             </div>
           </label>
           <button id="scanButton" type="submit" class="primary-btn flex items-center justify-center gap-2 rounded-2xl px-6 py-4 text-sm font-semibold text-white">
@@ -120,7 +157,7 @@
           </div>
           <div class="mt-6 rounded-3xl border border-slate-800 bg-slate-950/70 p-5">
             <p class="mono text-xs uppercase tracking-[0.3em] text-slate-500">Current Query</p>
-            <pre id="queryPreview" class="mt-3 max-h-[220px] overflow-y-auto whitespace-pre-wrap break-words rounded-2xl border border-slate-800/80 bg-slate-900/40 px-4 py-3 text-sm leading-6 text-slate-200 scrollbar-thin">Enter a target domain and click a dork button to preview the search query.</pre>
+            <pre id="queryPreview" class="mt-3 max-h-[220px] overflow-y-auto whitespace-pre-wrap break-words rounded-2xl border border-slate-800/80 bg-slate-900/40 px-4 py-3 text-sm leading-6 text-slate-200 scrollbar-thin">Enter a domain and click any dork to see the query here.</pre>
           </div>
           <div class="mt-5 flex flex-wrap gap-3">
             <button id="openQueryButton" type="button" class="primary-btn rounded-2xl px-5 py-3 text-sm font-semibold text-white">Open Current Query</button>
@@ -157,7 +194,7 @@
                 <label for="notesArea" class="text-sm font-medium text-slate-300">Quick Notes</label>
                 <span class="mono text-[11px] uppercase tracking-[0.24em] text-slate-500">Saved locally</span>
               </div>
-              <textarea id="notesArea" rows="5" placeholder="Write recon notes..." class="mt-3 w-full rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-sm leading-6 text-slate-100 placeholder:text-slate-500 focus:border-blue-500/40 focus:outline-none"></textarea>
+              <textarea id="notesArea" rows="5" placeholder="Write recon notes..." class="mt-3 w-full rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-sm leading-6 text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-blue-500/50"></textarea>
             </div>
             <div class="mt-5">
               <p class="mono text-xs uppercase tracking-[0.3em] text-slate-400">Quick Actions</p>
@@ -223,7 +260,7 @@
             <p class="mono text-xs uppercase tracking-[0.3em] text-slate-400">Integration Notes</p>
             <div class="mt-3 space-y-3 text-sm leading-6 text-slate-300">
               <p>Prepared for future hooks into Shodan, Censys, certificate transparency, and custom bug bounty APIs.</p>
-              <p class="rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-slate-400">Suggested next step: replace the placeholder scan routine with async fetch calls and stream real findings into the tab renderer.</p>
+              <p class="rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-slate-400">Suggested next step: replace the placeholder scan routine with async fetch calls and stream real findings.</p>
             </div>
           </section>
         </div>
@@ -268,54 +305,54 @@
         { label: "main.yml file", build: d => `site:${d} "main.yml"` },
         { label: "Wordpress Backup", build: d => `site:${d} (inurl:wp-content OR inurl:wp-admin) (ext:zip OR ext:bak OR ext:sql)` },
         { label: "SQL file", build: d => `site:${d} ext:sql` },
-        { label: "Mysql file", build: d => `site:${d} ("mysql" OR "mysqldump") (ext:sql OR ext:txt)` },
-        { label: "Directories containing SQL installs and/or SQL databases", build: d => `site:${d} intitle:"index of" ("sql" OR "mysql" OR "db")` }
+        { label: "Mysql file", build: d => `site:${d} "mysql" OR site:${d} "mysqldump"` },
+        { label: "Directories containing SQL installs and/or SQL databases", build: d => `site:${d} intitle:"index of" "sql" OR site:${d} intitle:"index of" "mysql" OR site:${d} intitle:"index of" "db"` }
       ]},
       { title: "Auth & Panels", accent: "orange", description: "Look for auth flows, admin entry points, and leftover installers.", items: [
-        { label: "Login pages", build: d => `site:${d} (inurl:login OR intitle:login OR inurl:signin)` },
-        { label: "Admin Portal", build: d => `site:${d} (inurl:admin OR intitle:"admin portal" OR intitle:dashboard)` },
-        { label: "phpinfo()", build: d => `site:${d} ext:php intitle:phpinfo "published by the PHP Group"` },
-        { label: "Install / Setup files", build: d => `site:${d} (inurl:install OR inurl:setup OR intitle:"setup wizard")` },
+        { label: "Login pages", build: d => `site:${d} inurl:login OR site:${d} intitle:login OR site:${d} inurl:signin` },
+        { label: "Admin Portal", build: d => `site:${d} inurl:admin OR site:${d} intitle:"admin portal" OR site:${d} intitle:dashboard` },
+        { label: "phpinfo()", build: d => `site:${d} ext:php intitle:phpinfo` },
+        { label: "Install / Setup files", build: d => `site:${d} inurl:install OR site:${d} inurl:setup OR site:${d} intitle:"setup wizard"` },
         { label: "Drupal Login", build: d => `site:${d} inurl:user/login` },
-        { label: "Joomla Database/", build: d => `site:${d} "Joomla!" ("configuration.php" OR inurl:database)` }
+        { label: "Joomla Database/", build: d => `site:${d} "Joomla!"` }
       ]},
       { title: "Recon & OSINT", accent: "green", description: "Pivot through public sources for assets, code references, and disclosures.", items: [
         { label: "Find Subdomains", build: d => `site:*.${d}` },
         { label: "Find Sub-Subdomains", build: d => `site:*.*.${d}` },
-        { label: "Employees on LINKEDIN", build: d => `"${d}" (site:linkedin.com/in OR site:linkedin.com/company)` },
+        { label: "Employees on LINKEDIN", build: d => `"${d}" site:linkedin.com` },
         { label: "Search in GITHUB", build: d => `"${d}" site:github.com` },
         { label: "Find Pastebin entries", build: d => `"${d}" site:pastebin.com` },
         { label: "Search in Reddit", build: d => `"${d}" site:reddit.com` },
         { label: "Search OpenBugBounty", build: d => `"${d}" site:openbugbounty.org` }
       ]},
       { title: "Tech & CMS Detection", accent: "blue", description: "Fingerprint WordPress footprints and surface juicy CMS files.", items: [
-        { label: "Find WordPress", build: d => `site:${d} (inurl:wp- OR inurl:wp-content)` },
-        { label: "Find WordPress #2", build: d => `site:${d} "wp-content/uploads"` },
-        { label: "Wordpress Juicy file 1", build: d => `site:${d} (inurl:wp-config.php OR inurl:wp-config)` },
-        { label: "Wordpress Juicy file 2", build: d => `site:${d} ("backup-db" OR "database backup") "wp-content"` },
-        { label: "Wordpress Juicy file 3", build: d => `site:${d} (inurl:debug.log OR inurl:uploads) "wordpress"` },
+        { label: "Find WordPress", build: d => `site:${d} inurl:wp-` },
+        { label: "Find WordPress #2", build: d => `site:${d} inurl:wp-content` },
+        { label: "Wordpress Juicy file 1", build: d => `site:${d} inurl:wp-config.php` },
+        { label: "Wordpress Juicy file 2", build: d => `site:${d} "wp-content" "backup-db"` },
+        { label: "Wordpress Juicy file 3", build: d => `site:${d} inurl:debug.log` },
         { label: "Vulnerable Wordpress Plugin", build: d => `site:${d} inurl:/wp-content/plugins/` },
-        { label: "wp-content Juicy Info", build: d => `site:${d} "wp-content" ("uploads" OR "plugins" OR "themes")` }
+        { label: "wp-content Juicy Info", build: d => `site:${d} inurl:wp-content` }
       ]},
       { title: "Advanced Search / Archive", accent: "orange", description: "Search historical traces and archived pivots around the target.", items: [
         { label: "Search in Web Archive #1", build: d => `"${d}" site:web.archive.org` },
-        { label: "Search in Web Archive #2", build: d => `"${d}" "snapshot" site:web.archive.org` }
+        { label: "Search in Web Archive #2", build: d => `site:web.archive.org/${d}` }
       ]},
       { title: "Intelligence Sources", accent: "green", description: "Jump into infra and certificate intelligence platforms through Google.", items: [
         { label: "Search in SHODAN", build: d => `"${d}" site:shodan.io` },
-        { label: "Search in CENSYS (IPv4)", build: d => `"${d}" site:search.censys.io/hosts` },
-        { label: "Search in CENSYS (Domain)", build: d => `"${d}" site:search.censys.io` },
-        { label: "Search in Censys (Certificates)", build: d => `"${d}" site:search.censys.io/certificates` },
+        { label: "Search in CENSYS (IPv4)", build: d => `"${d}" site:search.censys.io` },
+        { label: "Search in CENSYS (Domain)", build: d => `${d} site:search.censys.io` },
+        { label: "Search in Censys (Certificates)", build: d => `"${d}" site:crt.sh` },
         { label: "Certificate Transparency", build: d => `"${d}" site:crt.sh` },
         { label: "Check in ThreatCrowd", build: d => `"${d}" site:threatcrowd.org` }
       ]},
       { title: "Vulnerability Patterns", accent: "orange", description: "Target error strings, risky endpoints, and sensitive file patterns.", items: [
-        { label: "Open Redirects", build: d => `site:${d} (inurl:url= OR inurl:return= OR inurl:next= OR inurl:redirect=)` },
-        { label: "SQL errors", build: d => `site:${d} ("sql syntax near" OR "mysql_fetch" OR "ORA-01756")` },
-        { label: "File Upload", build: d => `site:${d} (inurl:upload OR intitle:"file upload")` },
-        { label: "Sensitive File", build: d => `site:${d} (ext:json OR ext:xml OR ext:txt) ("api_key" OR "token" OR "secret")` },
-        { label: "Sharing API Info", build: d => `site:${d} ("api_key" OR "x-api-key" OR "authorization bearer" OR "swagger")` },
-        { label: "Remote procedure call protocol", build: d => `site:${d} (inurl:xmlrpc.php OR "RPC Endpoint" OR inurl:rpc)` }
+        { label: "Open Redirects", build: d => `site:${d} inurl:url=` },
+        { label: "SQL errors", build: d => `site:${d} "sql syntax near"` },
+        { label: "File Upload", build: d => `site:${d} inurl:upload` },
+        { label: "Sensitive File", build: d => `site:${d} (ext:json OR ext:xml OR ext:txt) "api_key"` },
+        { label: "Sharing API Info", build: d => `site:${d} "api_key" OR site:${d} "x-api-key"` },
+        { label: "Remote procedure call protocol", build: d => `site:${d} inurl:xmlrpc.php` }
       ]},
       { title: "Legacy / Flash", accent: "blue", description: "Track older Flash-era resources that still reveal forgotten assets.", items: [
         { label: "Find SWF", build: d => `site:${d} ext:swf` },
@@ -326,7 +363,7 @@
       { title: "Other", accent: "green", description: "Catch a few strong special-case checks outside the main buckets.", items: [
         { label: "ArcGIS REST Services Directory", build: d => `site:${d} inurl:"/ArcGIS/rest/services"` },
         { label: "Test CrossDomain", build: d => `site:${d} ext:xml "crossdomain.xml"` },
-        { label: "Apache STRUTS RCE", build: d => `site:${d} ("struts" OR "actionMessage" OR "There is no Action mapped")` }
+        { label: "Apache STRUTS RCE", build: d => `site:${d} "struts"` }
       ]}
     ];
 
@@ -368,6 +405,7 @@
       scanProgress: document.getElementById("scanProgress"),
       scanLog: document.getElementById("scanLog"),
       tabPanels: document.getElementById("tabPanels"),
+      themeToggle: document.getElementById("themeToggle"),
       footer: document.querySelector("footer")
     };
 
@@ -377,6 +415,7 @@
     let activeDomain = "";
     let isLoadingNotes = false;
     let scanTimers = [];
+    let isDarkMode = true;
 
     const tabState = {
       subdomains: [{ name: "Waiting for scan", meta: "Run the placeholder scan to populate projected assets." }],
@@ -387,6 +426,31 @@
     const flatItems = dorkCategories.flatMap(category => category.items);
     const dorkMapById = new Map(flatItems.map(item => [item.id, item]));
     const dorkMapByLabel = new Map(flatItems.map(item => [item.label, item]));
+
+    function initTheme() {
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme === "light") {
+        isDarkMode = false;
+        document.body.classList.add("light-mode");
+        el.themeToggle.classList.add("active");
+        el.themeToggle.querySelector(".theme-toggle-circle").textContent = "☀️";
+      }
+    }
+
+    function toggleTheme() {
+      isDarkMode = !isDarkMode;
+      if (isDarkMode) {
+        document.body.classList.remove("light-mode");
+        localStorage.setItem("theme", "dark");
+        el.themeToggle.classList.remove("active");
+        el.themeToggle.querySelector(".theme-toggle-circle").textContent = "🌙";
+      } else {
+        document.body.classList.add("light-mode");
+        localStorage.setItem("theme", "light");
+        el.themeToggle.classList.add("active");
+        el.themeToggle.querySelector(".theme-toggle-circle").textContent = "☀️";
+      }
+    }
 
     function normalizeDomain(value) {
       const cleaned = value.trim();
@@ -786,6 +850,8 @@
       setStatus("Dork progress reset for current target", "success");
     });
 
+    el.themeToggle.addEventListener("click", toggleTheme);
+
     document.querySelectorAll("[data-shortcut-label]").forEach(button => {
       button.addEventListener("click", () => {
         const item = dorkMapByLabel.get(button.dataset.shortcutLabel);
@@ -797,6 +863,7 @@
       button.addEventListener("click", () => setActiveTab(button.dataset.tab));
     });
 
+    initTheme();
     renderCategories();
     renderTabs();
     observeFade();
